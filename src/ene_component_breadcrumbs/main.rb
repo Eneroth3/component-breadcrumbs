@@ -29,13 +29,32 @@ module Eneroth
       # @see https://ruby.sketchup.com/Sketchup/Overlay.html
       # @see https://ruby.sketchup.com/Sketchup/Tool.html
       def draw(view)
-        position = [100, 20]
-        view.draw_text(position, breadcrumb_text(view))
+        position = [20, 20]
+        options = { size: 12 }
+        view.draw_text(position, breadcrumb_text(view), options)
       end
 
       def breadcrumb_text(view)
-        # TODO: Add component count
-        (view.model.active_path || []).map { |i| display_name(i) }.join(" > ") # REVIEW: Other symbol?
+        crumbs = [filename(view.model)]
+        # active_path returns nil, not empty Array, when at top level -_- .
+        crumbs += (view.model.active_path || []).map { |i| crumb_text(i) }
+
+        crumbs.join(" › ")
+      end
+
+      def filename(model)
+        return "Untitled" if model.path == ""
+
+        File.basename(model.path)
+      end
+
+      def crumb_text(instance)
+        text = display_name(instance)
+        # Don't display count for Groups. They represent unique objects and are
+        # silently made unique when edited.
+        text += " (#{instance.definition.count_used_instances})" if instance.is_a?(Sketchup::ComponentInstance)
+
+        text
       end
 
       def display_name(instance)
